@@ -5,138 +5,137 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VbProjectParserCore.Compression
+namespace VbProjectParserCore.Compression;
+
+public static class BitHelper
 {
-    public static class BitHelper
+    /// <summary>
+    /// Takes count elements from the array, starting at ArrayIndex (and moves ArrayIndex forward)
+    /// </summary>
+    public static byte[] ReadNBytes(this byte[] Bytes, int count, ref int ArrayIndex)
     {
-        /// <summary>
-        /// Takes count elements from the array, starting at ArrayIndex (and moves ArrayIndex forward)
-        /// </summary>
-        public static byte[] ReadNBytes(this byte[] Bytes, int count, ref int ArrayIndex)
+        byte[] result = new byte[count];
+        Array.Copy(Bytes, ArrayIndex, result, 0, count);
+        ArrayIndex += count;
+        return result;
+    }
+
+    public static string ToBitString(this IEnumerable<byte> Bytes, string separator = " ")
+    {
+        StringBuilder sb = new();
+        bool start = true;
+
+        foreach (var b in Bytes)
         {
-            byte[] result = new byte[count];
-            Array.Copy(Bytes, ArrayIndex, result, 0, count);
-            ArrayIndex += count;
-            return result;
+            if (!start)
+                sb.Append(separator);
+
+            sb.Append(Convert.ToString(b, 2).PadLeft(8, '0'));
+
+            start = false;
         }
 
-        public static string ToBitString(this IEnumerable<byte> Bytes, string separator = " ")
+        return sb.ToString();
+    }
+
+    public static string ToBitString(this ushort Number)
+    {
+        return Convert.ToString(Number, 2).PadLeft(sizeof(ushort) * 8, '0');
+    }
+
+    public static string ToBitString(this int Number)
+    {
+        return Convert.ToString(Number, 2).PadLeft(sizeof(int) * 8, '0');
+    }
+
+    public static string ToBitString(this byte @byte)
+    {
+        return new[] { @byte }.ToBitString();
+    }
+
+
+    /// <summary>
+    /// True if the bit is 1, false if the bit is 0
+    /// </summary>
+    /// <param name="val"></param>
+    /// <param name="position">Null-based</param>
+    /// <returns></returns>
+    public static bool ReadBitAtPosition(this byte val, int position)
+    {
+        if (position < 0 || position > 7)
+            throw new ArgumentOutOfRangeException(nameof(val));
+
+        return (val & 1 << position) != 0x00;
+    }
+
+    public const bool DataFormatIsLittleEndianian = true;
+
+    public static ushort ToUInt16(byte[] vals)
+    {
+        if (vals.Length != 2)
+            throw new ArgumentException();
+
+        if (BitConverter.IsLittleEndian != DataFormatIsLittleEndianian)
+            vals = vals.Reverse().ToArray();
+
+        return BitConverter.ToUInt16(vals, 0);
+    }
+
+    public static uint ToUInt32(byte[] vals)
+    {
+        if (vals.Length != 4)
+            throw new ArgumentException();
+
+        if (BitConverter.IsLittleEndian != DataFormatIsLittleEndianian)
+            vals = vals.Reverse().ToArray();
+
+        return BitConverter.ToUInt32(vals, 0);
+    }
+
+
+
+
+
+
+
+    static readonly int[] Empty = new int[0];
+
+    public static int[] Locate(this byte[] self, byte[] candidate)
+    {
+        if (IsEmptyLocate(self, candidate))
+            return Empty;
+
+        var list = new List<int>();
+
+        for (int i = 0; i < self.Length; i++)
         {
-            StringBuilder sb = new StringBuilder();
-            bool start = true;
+            if (!IsMatch(self, i, candidate))
+                continue;
 
-            foreach (var b in Bytes)
-            {
-                if (!start)
-                    sb.Append(separator);
-
-                sb.Append(Convert.ToString(b, 2).PadLeft(8, '0'));
-
-                start = false;
-            }
-
-            return sb.ToString();
+            list.Add(i);
         }
 
-        public static string ToBitString(this ushort Number)
-        {
-            return Convert.ToString(Number, 2).PadLeft(sizeof(ushort) * 8, '0');
-        }
+        return list.Count == 0 ? Empty : list.ToArray();
+    }
 
-        public static string ToBitString(this int Number)
-        {
-            return Convert.ToString(Number, 2).PadLeft(sizeof(int) * 8, '0');
-        }
+    static bool IsMatch(byte[] array, int position, byte[] candidate)
+    {
+        if (candidate.Length > array.Length - position)
+            return false;
 
-        public static string ToBitString(this byte @byte)
-        {
-            return new[] { @byte }.ToBitString();
-        }
-
-
-        /// <summary>
-        /// True if the bit is 1, false if the bit is 0
-        /// </summary>
-        /// <param name="val"></param>
-        /// <param name="position">Null-based</param>
-        /// <returns></returns>
-        public static bool ReadBitAtPosition(this byte val, int position)
-        {
-            if (position < 0 || position > 7)
-                throw new ArgumentOutOfRangeException(nameof(val));
-
-            return (val & 1 << position) != 0x00;
-        }
-
-        public const bool DataFormatIsLittleEndianian = true;
-
-        public static ushort ToUInt16(byte[] vals)
-        {
-            if (vals.Length != 2)
-                throw new ArgumentException();
-
-            if (BitConverter.IsLittleEndian != DataFormatIsLittleEndianian)
-                vals = vals.Reverse().ToArray();
-
-            return BitConverter.ToUInt16(vals, 0);
-        }
-
-        public static uint ToUInt32(byte[] vals)
-        {
-            if (vals.Length != 4)
-                throw new ArgumentException();
-
-            if (BitConverter.IsLittleEndian != DataFormatIsLittleEndianian)
-                vals = vals.Reverse().ToArray();
-
-            return BitConverter.ToUInt32(vals, 0);
-        }
-
-
-
-
-
-
-
-        static readonly int[] Empty = new int[0];
-
-        public static int[] Locate(this byte[] self, byte[] candidate)
-        {
-            if (IsEmptyLocate(self, candidate))
-                return Empty;
-
-            var list = new List<int>();
-
-            for (int i = 0; i < self.Length; i++)
-            {
-                if (!IsMatch(self, i, candidate))
-                    continue;
-
-                list.Add(i);
-            }
-
-            return list.Count == 0 ? Empty : list.ToArray();
-        }
-
-        static bool IsMatch(byte[] array, int position, byte[] candidate)
-        {
-            if (candidate.Length > array.Length - position)
+        for (int i = 0; i < candidate.Length; i++)
+            if (array[position + i] != candidate[i])
                 return false;
 
-            for (int i = 0; i < candidate.Length; i++)
-                if (array[position + i] != candidate[i])
-                    return false;
+        return true;
+    }
 
-            return true;
-        }
-
-        static bool IsEmptyLocate(byte[] array, byte[] candidate)
-        {
-            return array == null
-                || candidate == null
-                || array.Length == 0
-                || candidate.Length == 0
-                || candidate.Length > array.Length;
-        }
+    static bool IsEmptyLocate(byte[] array, byte[] candidate)
+    {
+        return array == null
+            || candidate == null
+            || array.Length == 0
+            || candidate.Length == 0
+            || candidate.Length > array.Length;
     }
 }

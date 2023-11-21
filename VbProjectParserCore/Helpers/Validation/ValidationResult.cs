@@ -5,96 +5,98 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VbProjectParserCore.Helpers.Validation
+namespace VbProjectParserCore.Helpers.Validation;
+
+public class ValidationResult
 {
-    public class ValidationResult
+    private List<ValidationMessage> Messages = new();
+
+    public static readonly ValidationResult Success = new();
+
+    public ValidationResult()
     {
-        private List<ValidationMessage> Messages = new List<ValidationMessage>();
 
-        public static readonly ValidationResult Success = new ValidationResult();
+    }
 
-        public ValidationResult()
+    public bool IsSuccess()
+    {
+        return !GetErrors().Any();
+    }
+
+    public IEnumerable<ValidationError> GetErrors()
+    {
+        return Messages.OfType<ValidationError>();
+    }
+
+    public IEnumerable<ValidationWarning> GetWarnings()
+    {
+        return Messages.OfType<ValidationWarning>();
+    }
+
+    public IEnumerable<ValidationMessage> GetMessages()
+    {
+        return Messages.AsReadOnly();
+    }
+
+    public override string ToString()
+    {
+        return ToString(true);
+    }
+
+    public string ToString(bool DisplayWarnings)
+    {
+        if (IsSuccess())
         {
+            StringBuilder sb = new("Validation ok");
 
-        }
-
-        public bool IsSuccess()
-        {
-            return !GetErrors().Any();
-        }
-
-        public IEnumerable<ValidationError> GetErrors()
-        {
-            return Messages.OfType<ValidationError>();
-        }
-
-        public IEnumerable<ValidationWarning> GetWarnings()
-        {
-            return Messages.OfType<ValidationWarning>();
-        }
-
-        public IEnumerable<ValidationMessage> GetMessages()
-        {
-            return Messages.AsReadOnly();
-        }
-
-        public override string ToString()
-        {
-            return ToString(true);
-        }
-
-        public string ToString(bool DisplayWarnings)
-        {
-            if (IsSuccess())
+            if (DisplayWarnings)
             {
-                StringBuilder sb = new StringBuilder("Validation ok");
-
-                if (DisplayWarnings)
+                foreach (var warning in GetWarnings())
                 {
-                    foreach (var warning in GetWarnings())
-                    {
-                        sb.Append("Warning: " + warning.ToString());
-                    }
+                    sb.Append($"Warning: {warning}");
                 }
-
-                return sb.ToString();
             }
-            else
+
+            return sb.ToString();
+        }
+        else
+        {
+            StringBuilder sb = new("Validation failed");
+
+            foreach (var message in Messages)
             {
-                StringBuilder sb = new StringBuilder("Validation failed");
+                sb.Append(Environment.NewLine);
 
-                foreach (var message in Messages)
+                if (message is ValidationError)
                 {
-                    sb.Append(Environment.NewLine);
-
-                    if (message is ValidationError)
-                    {
-                        sb.Append("Error: " + message.ToString());
-                    }
-                    else if (message is ValidationWarning)
-                    {
-                        sb.Append("Warning: " + message.ToString());
-                    }
-                    else
-                    {
-                        sb.Append("Unknown: " + message.ToString());
-                    }
+                    sb.Append($"Error: {message}");
                 }
-
-                return sb.ToString();
+                else if (message is ValidationWarning)
+                {
+                    sb.Append($"Warning: {message}");
+                }
+                else
+                {
+                    sb.Append($"Unknown: {message}");
+                }
             }
-        }
 
-        public ValidationResult Merge(ValidationResult Other)
-        {
-            return Merge(new ValidationResult[] { Other });
+            return sb.ToString();
         }
+    }
 
-        public ValidationResult Merge(IEnumerable<ValidationResult> Others)
+    public ValidationResult Merge(ValidationResult Other)
+    {
+        return Merge(new ValidationResult[] { Other });
+    }
+
+    public ValidationResult Merge(IEnumerable<ValidationResult> Others)
+    {
+        var result = new ValidationResult
         {
-            var result = new ValidationResult();
-            result.Messages = Messages.Concat(Others.SelectMany(x => x.Messages)).ToList();
-            return result;
-        }
+            Messages = Messages.Concat(Others.SelectMany(x => x.Messages)).ToList()
+        };
+
+        return result;
     }
 }

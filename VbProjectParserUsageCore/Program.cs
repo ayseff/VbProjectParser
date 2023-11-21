@@ -1,6 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using OpenMcdf;
-using System;
+using Utils;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,40 +16,18 @@ class Program
 {
     static void Main(string[] args)
     {
-        bool run = true;
-        while (run)
-        {
-            Console.WriteLine("Select one of the following actions:");
-            Console.WriteLine("\t1 - Display test.vbaProject.bin contents");
-            Console.WriteLine("\t2 - Read and display vbProject of a local document file on your disk");
-            Console.WriteLine("\t3 - Replace the vbProject of a local document file with contents from a local .bin file");
-            Console.WriteLine("\t4 or any other key - exit");
-            Console.WriteLine();
-            Console.Write("Your choice: ");
-
-            char choice = Console.ReadKey().KeyChar;
-            Console.WriteLine();
-
-            switch (choice)
+        var promptList = new ConsolePromptList()
             {
-                case '1':
-                    DisplayBinFile();
-                    break;
-                case '2':
-                    DisplayLocalDocumentFile();
-                    break;
-                case '3':
-                    ReplaceVbaParts();
-                    break;
-                default:
-                    run = false;
-                    break;
-            }
-        }
+                { "Display test.vbaProject.bin contents", () => DisplayBinFile() },
+                { "Read and display vbProject of a local document file on your disk", () => DisplayLocalDocumentFile() },
+                { "Replace the vbProject of a local document file with contents from a local .bin file",
+                    () => ReplaceVbaParts() }
+            };
 
-        Console.WriteLine("Done. The next keypress will close this window.");
-        Console.ReadKey();
+        promptList.RunConsolePromptInfinitely();
+
     }
+
 
     private static void DisplayBinFile()
     {

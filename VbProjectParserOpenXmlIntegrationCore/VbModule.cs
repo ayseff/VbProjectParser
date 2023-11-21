@@ -4,17 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VbProjectParserCore.OpenXml
-{
-    public class VbModule
-    {
-        public string Name { get; private set; }
-        public string Code { get; private set; }
+namespace VbProjectParserCore.OpenXml;
 
-        internal VbModule(string Name, string Code)
-        {
-            this.Name = Name;
-            this.Code = Code;
-        }
+public class VbModule
+{
+    public string Name { get; private set; }
+    public string Code { get; private set; }
+
+    internal VbModule(string Name, string Code)
+    {
+        this.Name = Name;
+        this.Code = Code;
     }
 }

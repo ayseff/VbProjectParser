@@ -7,23 +7,21 @@ using System.Text;
 using System.Threading.Tasks;
 using VbProjectParserCore.Data.ABNF.Common;
 
-namespace VbProjectParserCore.Data.ABNF
+namespace VbProjectParserCore.Data.ABNF;
+
+// p. 21
+public class ProjectId
 {
-    // p. 21
-    public class ProjectId
+    public Guid ProjectCLSID;
+
+    public static void Setup(ISyntax Syntax)
     {
-        public Guid ProjectCLSID;
-
-        public static void Setup(ISyntax Syntax)
-        {
-            Syntax
-                .Entity<ProjectId>()
-                .Property(x => x.ProjectCLSID)
-                .ByRegexPattern(CommonRegexPatterns._GUID)
-                .WithPrefix(new LiteralToken("ID=\""))
-                .WithPostfix(CommonTokens.DQUOTE + CommonTokens.NWLN);
-        }
-
+        Syntax
+            .Entity<ProjectId>()
+            .Property(x => x.ProjectCLSID)
+            .ByRegexPattern(CommonRegexPatterns._GUID)
+            .WithPrefix(new LiteralToken("ID=\""))
+            .WithPostfix(CommonTokens.DQUOTE + CommonTokens.NWLN);
     }
 
 }

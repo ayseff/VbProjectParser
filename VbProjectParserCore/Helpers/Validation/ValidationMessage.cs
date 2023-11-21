@@ -5,21 +5,20 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VbProjectParserCore.Helpers.Validation
+namespace VbProjectParserCore.Helpers.Validation;
+
+public abstract class ValidationMessage
 {
-    public abstract class ValidationMessage
-    {
-        public MemberInfo TargetMember { get; set; }
-        public string Message { get; set; }
-    }
+    public MemberInfo TargetMember { get; set; }
+    public string Message { get; set; }
+}
 
-    public class ValidationWarning : ValidationMessage
-    {
+public class ValidationWarning : ValidationMessage
+{
 
-    }
+}
 
-    public class ValidationError : ValidationMessage
-    {
+public class ValidationError : ValidationMessage
+{
 
-    }
 }

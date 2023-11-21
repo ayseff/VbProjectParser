@@ -7,28 +7,27 @@ using VbProjectParserCore.Compression;
 using VbProjectParserCore.Data.Base;
 using VbProjectParserCore.Data.Base.Attributes;
 
-namespace VbProjectParserCore.Data._PROJECTMODULES
+namespace VbProjectParserCore.Data._PROJECTMODULES;
+
+public class PROJECTCOOKIE : DataBase
 {
-    public class PROJECTCOOKIE : DataBase
+    [MustBe((ushort)0x0013)]
+    public readonly ushort Id;
+
+    [MustBe((uint)0x00000002)]
+    public readonly uint Size;
+
+    /// <summary>
+    /// Must be 0xFFFF on write
+    /// </summary>
+    public readonly ushort Cookie;
+
+    public PROJECTCOOKIE(XlBinaryReader Data)
     {
-        [MustBe((ushort)0x0013)]
-        public readonly ushort Id;
+        Id = Data.ReadUInt16();
+        Size = Data.ReadUInt32();
+        Cookie = Data.ReadUInt16();
 
-        [MustBe((uint)0x00000002)]
-        public readonly uint Size;
-
-        /// <summary>
-        /// Must be 0xFFFF on write
-        /// </summary>
-        public readonly ushort Cookie;
-
-        public PROJECTCOOKIE(XlBinaryReader Data)
-        {
-            Id = Data.ReadUInt16();
-            Size = Data.ReadUInt32();
-            Cookie = Data.ReadUInt16();
-
-            Validate();
-        }
+        Validate();
     }
 }

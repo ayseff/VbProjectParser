@@ -9,54 +9,53 @@ using VbProjectParserCore.Compression;
 using VbProjectParserCore.Data.Base;
 using VbProjectParserCore.Data.Base.Attributes;
 
-namespace VbProjectParserCore.Data._PROJECTINFORMATION
+namespace VbProjectParserCore.Data._PROJECTINFORMATION;
+
+public class PROJECTNAME : DataBase
 {
-    public class PROJECTNAME : DataBase
+    [MustBe((ushort)0x0004)]
+    public readonly ushort Id;
+
+    [Range(1, 128)]
+    public readonly uint Size;
+
+    [LengthMustEqualMember("Size")]
+    public readonly byte[] ProjectName;
+
+    protected readonly PROJECTINFORMATION parent;
+
+    public PROJECTNAME(PROJECTINFORMATION parent, XlBinaryReader Data)
     {
-        [MustBe((ushort)0x0004)]
-        public readonly ushort Id;
+        this.parent = parent;
 
-        [Range(1, 128)]
-        public readonly uint Size;
+        Id = Data.ReadUInt16();
+        Size = Data.ReadUInt32();
+        ProjectName = Data.ReadBytes((int)Size);
 
-        [LengthMustEqualMember("Size")]
-        public readonly byte[] ProjectName;
+        Validate();
+    }
 
-        protected readonly PROJECTINFORMATION parent;
+    /// <summary>
+    /// Returns a string of the Project Name, where encoding needs to be the project's
+    /// Encoding (as specified in the PROJECTCODEPAGE record)
+    /// </summary>
+    public string GetProjectNameAsString(Encoding encoding)
+    {
+        return encoding.GetString(ProjectName);
+    }
 
-        public PROJECTNAME(PROJECTINFORMATION parent, XlBinaryReader Data)
-        {
-            this.parent = parent;
+    public string GetProjectNameAsString(PROJECTCODEPAGE Codepage)
+    {
+        return GetProjectNameAsString(Codepage.GetEncoding());
+    }
 
-            Id = Data.ReadUInt16();
-            Size = Data.ReadUInt32();
-            ProjectName = Data.ReadBytes((int)Size);
+    public string GetProjectNameAsString(PROJECTINFORMATION ProjectInformation)
+    {
+        return GetProjectNameAsString(ProjectInformation.CodePageRecord);
+    }
 
-            Validate();
-        }
-
-        /// <summary>
-        /// Returns a string of the Project Name, where encoding needs to be the project's
-        /// Encoding (as specified in the PROJECTCODEPAGE record)
-        /// </summary>
-        public string GetProjectNameAsString(Encoding encoding)
-        {
-            return encoding.GetString(ProjectName);
-        }
-
-        public string GetProjectNameAsString(PROJECTCODEPAGE Codepage)
-        {
-            return GetProjectNameAsString(Codepage.GetEncoding());
-        }
-
-        public string GetProjectNameAsString(PROJECTINFORMATION ProjectInformation)
-        {
-            return GetProjectNameAsString(ProjectInformation.CodePageRecord);
-        }
-
-        public string GetProjectNameAsString()
-        {
-            return GetProjectNameAsString(parent);
-        }
+    public string GetProjectNameAsString()
+    {
+        return GetProjectNameAsString(parent);
     }
 }

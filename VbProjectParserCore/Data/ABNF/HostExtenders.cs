@@ -7,25 +7,24 @@ using System.Text;
 using System.Threading.Tasks;
 using VbProjectParserCore.Data.ABNF.Common;
 
-namespace VbProjectParserCore.Data.ABNF
+namespace VbProjectParserCore.Data.ABNF;
+
+// p 26
+public class HostExtenders
 {
-    // p 26
-    public class HostExtenders
+    public IList<HostExtenderRef> HostExtenderRef { get; set; }
+
+    public HostExtenders()
     {
-        public IList<HostExtenderRef> HostExtenderRef { get; set; }
+        HostExtenderRef = new List<HostExtenderRef>();
+    }
 
-        public HostExtenders()
-        {
-            HostExtenderRef = new List<HostExtenderRef>();
-        }
-
-        public static void Setup(ISyntax Syntax)
-        {
-            Syntax
-                .Entity<HostExtenders>()
-                .EnumerableProperty(x => x.HostExtenderRef)
-                .ByRegisteredTypes(typeof(HostExtenderRef))
-                .WithPrefix(new LiteralToken("[Host Extender Info]") + CommonTokens.NWLN);
-        }
+    public static void Setup(ISyntax Syntax)
+    {
+        Syntax
+            .Entity<HostExtenders>()
+            .EnumerableProperty(x => x.HostExtenderRef)
+            .ByRegisteredTypes(typeof(HostExtenderRef))
+            .WithPrefix(new LiteralToken("[Host Extender Info]") + CommonTokens.NWLN);
     }
 }

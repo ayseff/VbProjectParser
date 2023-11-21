@@ -6,16 +6,15 @@ using System.Text;
 using System.Threading.Tasks;
 using VbProjectParserCore.Data.Base;
 
-namespace VbProjectParserCore.Data.Base.Attributes
+namespace VbProjectParserCore.Data.Base.Attributes;
+
+public abstract class ValidationAttribute : Attribute
 {
-    public abstract class ValidationAttribute : Attribute
-    {
-        /// <summary>
-        /// Validates the Member of the ValidationObject
-        /// Should throw an exception if validation fails.
-        /// </summary>
-        public abstract ValidationResult Validate(object ValidationObject, MemberInfo member);
+    /// <summary>
+    /// Validates the Member of the ValidationObject
+    /// Should throw an exception if validation fails.
+    /// </summary>
+    public abstract ValidationResult Validate(object ValidationObject, MemberInfo member);
 
 
-    }
 }

@@ -9,31 +9,30 @@ using VbProjectParserCore.Compression;
 using VbProjectParserCore.Data.Base;
 using VbProjectParserCore.Data.Base.Attributes;
 
-namespace VbProjectParserCore.Data._PROJECTMODULES._MODULE
+namespace VbProjectParserCore.Data._PROJECTMODULES._MODULE;
+
+public class MODULENAMEUNICODE : DataBase
 {
-    public class MODULENAMEUNICODE : DataBase
+    [MustBe((ushort)0x0047)]
+    public readonly ushort Id;
+
+    [IsEvenNumber]
+    public readonly uint SizeOfModuleNameUnicode;
+
+    [LengthMustEqualMember("SizeOfModuleNameUnicode")]
+    public readonly byte[] ModuleNameUnicode;
+
+    public MODULENAMEUNICODE(XlBinaryReader Data)
     {
-        [MustBe((ushort)0x0047)]
-        public readonly ushort Id;
+        Id = Data.ReadUInt16();
+        SizeOfModuleNameUnicode = Data.ReadUInt32();
+        ModuleNameUnicode = Data.ReadBytes(SizeOfModuleNameUnicode);
 
-        [IsEvenNumber]
-        public readonly uint SizeOfModuleNameUnicode;
+        Validate();
+    }
 
-        [LengthMustEqualMember("SizeOfModuleNameUnicode")]
-        public readonly byte[] ModuleNameUnicode;
-
-        public MODULENAMEUNICODE(XlBinaryReader Data)
-        {
-            Id = Data.ReadUInt16();
-            SizeOfModuleNameUnicode = Data.ReadUInt32();
-            ModuleNameUnicode = Data.ReadBytes(SizeOfModuleNameUnicode);
-
-            Validate();
-        }
-
-        public string GetModuleNameUnicodeAsString()
-        {
-            return Encoding.Unicode.GetString(ModuleNameUnicode);
-        }
+    public string GetModuleNameUnicodeAsString()
+    {
+        return Encoding.Unicode.GetString(ModuleNameUnicode);
     }
 }

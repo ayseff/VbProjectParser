@@ -5,36 +5,35 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AbnfFrameworkCore.Tokens
+namespace AbnfFrameworkCore.Tokens;
+
+public class AggregateToken : Token
 {
-    public class AggregateToken : Token
+    protected readonly Token[] UnderlyingTokens;
+
+
+    public AggregateToken(Token[] UnderlyingTokens)
     {
-        protected readonly Token[] UnderlyingTokens;
+        this.UnderlyingTokens = UnderlyingTokens;
+    }
 
+    public override string GetAbnfSyntaxRepresentationFor(object obj)
+    {
+        StringBuilder sb = new StringBuilder();
 
-        public AggregateToken(Token[] UnderlyingTokens)
-        {
-            this.UnderlyingTokens = UnderlyingTokens;
-        }
+        foreach (var token in UnderlyingTokens)
+            sb.Append(token.GetAbnfSyntaxRepresentationFor(obj));
 
-        public override string GetAbnfSyntaxRepresentationFor(object obj)
-        {
-            StringBuilder sb = new StringBuilder();
+        return sb.ToString();
+    }
 
-            foreach (var token in UnderlyingTokens)
-                sb.Append(token.GetAbnfSyntaxRepresentationFor(obj));
+    public override string GetRegexPattern(MemberInfo Source)
+    {
+        StringBuilder sb = new StringBuilder();
 
-            return sb.ToString();
-        }
+        foreach (var token in UnderlyingTokens)
+            sb.Append(token.GetRegexPattern(Source));
 
-        public override string GetRegexPattern(MemberInfo Source)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            foreach (var token in UnderlyingTokens)
-                sb.Append(token.GetRegexPattern(Source));
-
-            return sb.ToString();
-        }
+        return sb.ToString();
     }
 }

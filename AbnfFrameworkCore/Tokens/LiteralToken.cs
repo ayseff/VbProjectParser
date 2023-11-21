@@ -1,26 +1,25 @@
 ﻿using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace AbnfFrameworkCore.Tokens
+namespace AbnfFrameworkCore.Tokens;
+
+public class LiteralToken : Token
 {
-    public class LiteralToken : Token
+    public string StringLiteral { get; private set; }
+
+    public LiteralToken(string StringLiteral)
     {
-        public string StringLiteral { get; private set; }
+        this.StringLiteral = StringLiteral;
+    }
 
-        public LiteralToken(string StringLiteral)
-        {
-            this.StringLiteral = StringLiteral;
-        }
+    public override string GetRegexPattern(MemberInfo Source)
+    {
+        var pattern = Regex.Escape(StringLiteral);
+        return pattern;
+    }
 
-        public override string GetRegexPattern(MemberInfo Source)
-        {
-            var pattern = Regex.Escape(StringLiteral);
-            return pattern;
-        }
-
-        public override string GetAbnfSyntaxRepresentationFor(/*MemberInfo source, */object obj)
-        {
-            return StringLiteral;
-        }
+    public override string GetAbnfSyntaxRepresentationFor(/*MemberInfo source, */object obj)
+    {
+        return StringLiteral;
     }
 }

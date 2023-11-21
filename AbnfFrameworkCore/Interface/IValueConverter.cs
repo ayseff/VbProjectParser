@@ -1,16 +1,15 @@
 ﻿using System;
 
-namespace AbnfFrameworkCore.Interface
-{
-    public interface IValueConverter
-    {
-        string ConvertToString(object value);
-        object ConvertBack(string text, Type TargetType);
-    }
+namespace AbnfFrameworkCore.Interface;
 
-    public interface IValueConverter<T> : IValueConverter
-    {
-        string ConvertToString(T value);
-        new T ConvertBack(string text);
-    }
+public interface IValueConverter
+{
+    string ConvertToString(object value);
+    object ConvertBack(string text, Type TargetType);
+}
+
+public interface IValueConverter<T> : IValueConverter
+{
+    string ConvertToString(T value);
+    new T ConvertBack(string text);
 }

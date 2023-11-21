@@ -9,100 +9,99 @@ using VbProjectParserCore.Data._PROJECTINFORMATION;
 using VbProjectParserCore.Data.Base;
 using VbProjectParserCore.Data.Base.Attributes;
 
-namespace VbProjectParserCore.Data._PROJECTREFERENCES
+namespace VbProjectParserCore.Data._PROJECTREFERENCES;
+
+/// <summary>
+/// Page 38
+/// </summary>
+public class REFERENCENAME : DataBase
 {
-    /// <summary>
-    /// Page 38
-    /// </summary>
-    public class REFERENCENAME : DataBase
+    [MustBe((ushort)0x0016)]
+    public readonly ushort Id;
+
+    public readonly uint SizeOfName;
+
+    public readonly byte[] Name;
+
+    [MustBe((ushort)0x003E)]
+    public readonly ushort Reserved;
+
+    public readonly uint SizeOfNameUnicode;
+
+    public readonly byte[] NameUnicode;
+
+    // TODO: RefProjectName, RefLibararyName, Reserved, SizeOfNameUnicode, NameUnicode
+
+    protected readonly PROJECTINFORMATION ProjectInformation;
+
+    public REFERENCENAME(PROJECTINFORMATION ProjectInformation, XlBinaryReader Data)
     {
-        [MustBe((ushort)0x0016)]
-        public readonly ushort Id;
+        this.ProjectInformation = ProjectInformation;
 
-        public readonly uint SizeOfName;
+        Id = Data.ReadUInt16();
+        SizeOfName = Data.ReadUInt32();
+        Name = Data.ReadBytes(SizeOfName);
+        Reserved = Data.ReadUInt16();
+        SizeOfNameUnicode = Data.ReadUInt32();
+        NameUnicode = Data.ReadBytes(SizeOfNameUnicode);
 
-        public readonly byte[] Name;
+        Validate();
+    }
 
-        [MustBe((ushort)0x003E)]
-        public readonly ushort Reserved;
+    protected override void Validate()
+    {
+        base.Validate();
+        ValidateName();
+        ValidateNameUnicode();
+        ValidateCompareNames();
+    }
 
-        public readonly uint SizeOfNameUnicode;
-
-        public readonly byte[] NameUnicode;
-
-        // TODO: RefProjectName, RefLibararyName, Reserved, SizeOfNameUnicode, NameUnicode
-
-        protected readonly PROJECTINFORMATION ProjectInformation;
-
-        public REFERENCENAME(PROJECTINFORMATION ProjectInformation, XlBinaryReader Data)
+    protected void ValidateName()
+    {
+        if (Name.Length != SizeOfName)
         {
-            this.ProjectInformation = ProjectInformation;
-
-            Id = Data.ReadUInt16();
-            SizeOfName = Data.ReadUInt32();
-            Name = Data.ReadBytes(SizeOfName);
-            Reserved = Data.ReadUInt16();
-            SizeOfNameUnicode = Data.ReadUInt32();
-            NameUnicode = Data.ReadBytes(SizeOfNameUnicode);
-
-            Validate();
+            throw new WrongValueException("Name.Length", Name.Length, SizeOfName);
         }
+    }
 
-        protected override void Validate()
+    protected void ValidateNameUnicode()
+    {
+        if (NameUnicode.Length != SizeOfNameUnicode)
         {
-            base.Validate();
-            ValidateName();
-            ValidateNameUnicode();
-            ValidateCompareNames();
+            throw new WrongValueException("NameUnicode", NameUnicode.Length, SizeOfNameUnicode);
         }
+    }
 
-        protected void ValidateName()
+    protected void ValidateCompareNames()
+    {
+        if (!GetNameAsString().Equals(GetNameUnicodeAsString()))
         {
-            if (Name.Length != SizeOfName)
-            {
-                throw new WrongValueException("Name.Length", Name.Length, SizeOfName);
-            }
+            throw new WrongValueException("NameUnicode vs. Name", NameUnicode, Name);
         }
+    }
 
-        protected void ValidateNameUnicode()
-        {
-            if (NameUnicode.Length != SizeOfNameUnicode)
-            {
-                throw new WrongValueException("NameUnicode", NameUnicode.Length, SizeOfNameUnicode);
-            }
-        }
+    public string GetNameAsString(Encoding encoding)
+    {
+        return encoding.GetString(Name);
+    }
 
-        protected void ValidateCompareNames()
-        {
-            if (!GetNameAsString().Equals(GetNameUnicodeAsString()))
-            {
-                throw new WrongValueException("NameUnicode vs. Name", NameUnicode, Name);
-            }
-        }
+    public string GetNameAsString(PROJECTCODEPAGE Codepage)
+    {
+        return GetNameAsString(Codepage.GetEncoding());
+    }
 
-        public string GetNameAsString(Encoding encoding)
-        {
-            return encoding.GetString(Name);
-        }
+    public string GetNameAsString(PROJECTINFORMATION ProjectInformation)
+    {
+        return GetNameAsString(ProjectInformation.CodePageRecord);
+    }
 
-        public string GetNameAsString(PROJECTCODEPAGE Codepage)
-        {
-            return GetNameAsString(Codepage.GetEncoding());
-        }
+    public string GetNameAsString()
+    {
+        return GetNameAsString(ProjectInformation);
+    }
 
-        public string GetNameAsString(PROJECTINFORMATION ProjectInformation)
-        {
-            return GetNameAsString(ProjectInformation.CodePageRecord);
-        }
-
-        public string GetNameAsString()
-        {
-            return GetNameAsString(ProjectInformation);
-        }
-
-        public string GetNameUnicodeAsString()
-        {
-            return Encoding.Unicode.GetString(NameUnicode);
-        }
+    public string GetNameUnicodeAsString()
+    {
+        return Encoding.Unicode.GetString(NameUnicode);
     }
 }

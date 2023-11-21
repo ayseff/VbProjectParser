@@ -4,15 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VbProjectParserCore.Compression
-{
-    public class DecompressedChunk
-    {
-        public byte[] Data;
+namespace VbProjectParserCore.Compression;
 
-        public DecompressedChunk(byte[] Data)
-        {
-            this.Data = Data;
-        }
+public class DecompressedChunk
+{
+    public byte[] Data;
+
+    public DecompressedChunk(byte[] Data)
+    {
+        this.Data = Data;
     }
 }

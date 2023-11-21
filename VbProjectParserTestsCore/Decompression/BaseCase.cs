@@ -7,24 +7,23 @@ using System.Threading.Tasks;
 using VbProjectParserCore.Compression;
 using VbProjectParserTestsCore.Data;
 
-namespace VbProjectParserTestsCore.Decompression
+namespace VbProjectParserTestsCore.Decompression;
+
+public abstract class BaseCase
 {
-    public abstract class BaseCase
+    protected ICompressionData TestData;
+
+    /// <summary>
+    /// Tests the reconstruction of uncompressed data ("No compression example", page 103)
+    /// </summary>
+    [TestMethod]
+    public void DecompressionTest()
     {
-        protected ICompressionData TestData;
+        byte[] CompressedData = TestData.CompressedData;
+        byte[] uncompressed = XlCompressionAlgorithm.Decompress(CompressedData);
 
-        /// <summary>
-        /// Tests the reconstruction of uncompressed data ("No compression example", page 103)
-        /// </summary>
-        [TestMethod]
-        public void DecompressionTest()
-        {
-            byte[] CompressedData = TestData.CompressedData;
-            byte[] uncompressed = XlCompressionAlgorithm.Decompress(CompressedData);
+        bool success = uncompressed.SequenceEqual(TestData.UncompressedData);
 
-            bool success = uncompressed.SequenceEqual(TestData.UncompressedData);
-
-            Assert.IsTrue(success, "Uncompressed byte sequence not equal to expected byte sequence");
-        }
+        Assert.IsTrue(success, "Uncompressed byte sequence not equal to expected byte sequence");
     }
 }

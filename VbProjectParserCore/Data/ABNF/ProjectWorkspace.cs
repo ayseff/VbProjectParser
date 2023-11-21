@@ -6,23 +6,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VbProjectParserCore.Data.ABNF
+namespace VbProjectParserCore.Data.ABNF;
+
+public class ProjectWorkspace
 {
-    public class ProjectWorkspace
+    public IList<ProjectWindowRecord> ProjectWindowRecords { get; set; }
+
+    public ProjectWorkspace()
     {
-        public IList<ProjectWindowRecord> ProjectWindowRecords { get; set; }
+        ProjectWindowRecords = new List<ProjectWindowRecord>();
+    }
 
-        public ProjectWorkspace()
-        {
-            ProjectWindowRecords = new List<ProjectWindowRecord>();
-        }
-
-        public static void Setup(ISyntax Syntax)
-        {
-            Syntax
-                .Entity<ProjectWorkspace>()
-                .EnumerableProperty(x => x.ProjectWindowRecords)
-                .ByRegisteredTypes(typeof(ProjectWindowRecord));
-        }
+    public static void Setup(ISyntax Syntax)
+    {
+        Syntax
+            .Entity<ProjectWorkspace>()
+            .EnumerableProperty(x => x.ProjectWindowRecords)
+            .ByRegisteredTypes(typeof(ProjectWindowRecord));
     }
 }

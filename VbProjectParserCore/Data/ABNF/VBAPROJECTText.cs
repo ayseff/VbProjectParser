@@ -7,35 +7,34 @@ using System.Text;
 using System.Threading.Tasks;
 using VbProjectParserCore.Data.ABNF.Common;
 
-namespace VbProjectParserCore.Data.ABNF
+namespace VbProjectParserCore.Data.ABNF;
+
+public class VBAPROJECTText
 {
-    public class VBAPROJECTText
+    public ProjectProperties ProjectProperties { get; set; }
+
+    public HostExtenders HostExtenders { get; set; }
+
+    public ProjectWorkspace ProjectWorkspace { get; set; }
+
+    public static void Setup(ISyntax Syntax)
     {
-        public ProjectProperties ProjectProperties { get; set; }
+        Syntax
+            .Entity<VBAPROJECTText>()
+            .Property(x => x.ProjectProperties)
+            .ByRegisteredTypes(typeof(ProjectProperties))
+            .WithPostfix(CommonTokens.NWLN);
 
-        public HostExtenders HostExtenders { get; set; }
+        Syntax
+            .Entity<VBAPROJECTText>()
+            .Property(x => x.HostExtenders)
+            .ByRegisteredTypes(typeof(HostExtenders));
 
-        public ProjectWorkspace ProjectWorkspace { get; set; }
-
-        public static void Setup(ISyntax Syntax)
-        {
-            Syntax
-                .Entity<VBAPROJECTText>()
-                .Property(x => x.ProjectProperties)
-                .ByRegisteredTypes(typeof(ProjectProperties))
-                .WithPostfix(CommonTokens.NWLN);
-
-            Syntax
-                .Entity<VBAPROJECTText>()
-                .Property(x => x.HostExtenders)
-                .ByRegisteredTypes(typeof(HostExtenders));
-
-            Syntax
-                .Entity<VBAPROJECTText>()
-                .Property(x => x.ProjectWorkspace)
-                .ByRegisteredTypes(typeof(ProjectWorkspace))
-                .WithPrefix(CommonTokens.NWLN + new LiteralToken("[Workspace]") + CommonTokens.NWLN)
-                .IsOptional();
-        }
+        Syntax
+            .Entity<VBAPROJECTText>()
+            .Property(x => x.ProjectWorkspace)
+            .ByRegisteredTypes(typeof(ProjectWorkspace))
+            .WithPrefix(CommonTokens.NWLN + new LiteralToken("[Workspace]") + CommonTokens.NWLN)
+            .IsOptional();
     }
 }

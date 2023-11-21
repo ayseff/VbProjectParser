@@ -15,198 +15,197 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using AbnfFrameworkCore.Interface;
 
-namespace AbnfFrameworkCore
+namespace AbnfFrameworkCore;
+
+public class EntityBuilder<TObj> : IEntityBuilder<TObj>
+    where TObj : class
 {
-    public class EntityBuilder<TObj> : IEntityBuilder<TObj>
-        where TObj : class
+    private IDictionary<MemberInfo, IPropertyBuilder> _PropertyBuilders = new Dictionary<MemberInfo, IPropertyBuilder>();
+    public IValueConverter DefaultConverter { get; private set; }
+    private readonly Syntax ParentSyntax;
+
+    public Syntax OwningSyntax => ParentSyntax;
+
+    public Type EntityType => typeof(TObj);
+
+    public EntityBuilder(Syntax ParentSyntax, IValueConverter DefaultConverter)
     {
-        private IDictionary<MemberInfo, IPropertyBuilder> _PropertyBuilders = new Dictionary<MemberInfo, IPropertyBuilder>();
-        public IValueConverter DefaultConverter { get; private set; }
-        private readonly Syntax ParentSyntax;
+        this.ParentSyntax = ParentSyntax;
+        this.DefaultConverter = DefaultConverter;
+    }
 
-        public Syntax OwningSyntax => ParentSyntax;
+    public IPropertyBuilder GetPropertyBuilderFor(MemberInfo SelectedMember)
+    {
+        return _PropertyBuilders[SelectedMember];
+    }
 
-        public Type EntityType => typeof(TObj);
+    public IDictionary<MemberInfo, IPropertyBuilder> GetPropertyBuilders()
+    {
+        return new ReadOnlyDictionary<MemberInfo, IPropertyBuilder>(_PropertyBuilders);
+    }
 
-        public EntityBuilder(Syntax ParentSyntax, IValueConverter DefaultConverter)
+    public IPropertyBuilder<TObj, IEnumerable<TProperty>> EnumerableProperty<TProperty>(Expression<Func<TObj, IEnumerable<TProperty>>> PropertySelector, int? MinCount = null, int? MaxCount = null)
+    {
+        if (PropertySelector == null)
+            throw new ArgumentNullException(nameof(PropertySelector));
+
+        MemberInfo mi = GetMemberInfo(PropertySelector);
+
+        if (mi == null)
+            throw new ArgumentException($"Could not get MemberInfo from {PropertySelector}. Make sure the expression is correct.", nameof(PropertySelector));
+
+        if (!_PropertyBuilders.ContainsKey(mi))
         {
-            this.ParentSyntax = ParentSyntax;
-            this.DefaultConverter = DefaultConverter;
+            var builder = new EnumerablePropertyBuilder<TObj, TProperty>(this, mi, typeof(TProperty), MinCount, MaxCount);
+            _PropertyBuilders.Add(mi, builder);
         }
 
-        public IPropertyBuilder GetPropertyBuilderFor(MemberInfo SelectedMember)
+        return (IPropertyBuilder<TObj, IEnumerable<TProperty>>)_PropertyBuilders[mi];
+    }
+
+    public IPropertyBuilder<TObj, TProperty> Property<TProperty>(Expression<Func<TObj, TProperty>> PropertySelector)
+    {
+        if (PropertySelector == null)
+            throw new ArgumentNullException(nameof(PropertySelector));
+
+        MemberInfo mi = GetMemberInfo(PropertySelector);
+
+        if (mi == null)
+            throw new ArgumentException($"Could not get MemberInfo from {PropertySelector}. Make sure the expression is correct.", nameof(PropertySelector));
+
+        if (!_PropertyBuilders.ContainsKey(mi))
         {
-            return _PropertyBuilders[SelectedMember];
+            var builder = new PropertyBuilder<TObj, TProperty>(this, mi);
+            _PropertyBuilders.Add(mi, builder);
         }
 
-        public IDictionary<MemberInfo, IPropertyBuilder> GetPropertyBuilders()
+        return (IPropertyBuilder<TObj, TProperty>)_PropertyBuilders[mi];
+    }
+
+    public IEntityBuilder<TObj> HasBaseType<TBaseType>()
+        where TBaseType : class
+    {
+        if (ParentSyntax.Entity(typeof(TBaseType)) == null)
+            throw new ArgumentException($"No builder for type {typeof(TBaseType)} registered. Make sure to call .HasBaseType() on an inheriting type AFTER having set up the parent type within the builder", "TBaseType");
+
+        if (!typeof(TBaseType).IsAssignableFrom(typeof(TObj)))
+            throw new ArgumentException($"{typeof(TObj).FullName} does not inherit from {typeof(TBaseType).FullName}", "TBaseType");
+
+        var ParentBuilder = ParentSyntax.Entity<TBaseType>();
+        foreach (var kvp in ParentBuilder.GetPropertyBuilders())
         {
-            return new ReadOnlyDictionary<MemberInfo, IPropertyBuilder>(_PropertyBuilders);
+            _PropertyBuilders.Add(kvp);
         }
 
-        public IPropertyBuilder<TObj, IEnumerable<TProperty>> EnumerableProperty<TProperty>(Expression<Func<TObj, IEnumerable<TProperty>>> PropertySelector, int? MinCount = null, int? MaxCount = null)
+        return this;
+    }
+
+    public string GetRegexPattern()
+    {
+        var result = new StringBuilder();
+
+        foreach (var kvp in _PropertyBuilders)
         {
-            if (PropertySelector == null)
-                throw new ArgumentNullException(nameof(PropertySelector));
+            var builder = kvp.Value;
+            Trace.WriteLine($"Processing builder {builder}");
 
-            MemberInfo mi = GetMemberInfo(PropertySelector);
+            string capture_group_name = GetRegexGroupNameFor(kvp.Key, kvp.Value);
 
-            if (mi == null)
-                throw new ArgumentException($"Could not get MemberInfo from {PropertySelector}. Make sure the expression is correct.", nameof(PropertySelector));
-
-            if (!_PropertyBuilders.ContainsKey(mi))
-            {
-                var builder = new EnumerablePropertyBuilder<TObj, TProperty>(this, mi, typeof(TProperty), MinCount, MaxCount);
-                _PropertyBuilders.Add(mi, builder);
-            }
-
-            return (IPropertyBuilder<TObj, IEnumerable<TProperty>>)_PropertyBuilders[mi];
+            string pattern = @"(?<" + capture_group_name + ">";
+            pattern += builder.GetRegex();
+            pattern += "(?# end " + capture_group_name + ")";
+            pattern += ")";
+            result.Append(pattern);
         }
 
-        public IPropertyBuilder<TObj, TProperty> Property<TProperty>(Expression<Func<TObj, TProperty>> PropertySelector)
+        return result.ToString();
+    }
+
+    private string GetRegexGroupNameFor(MemberInfo mi, IPropertyBuilder builder)
+    {
+        if (builder == null)
+            throw new ArgumentNullException(nameof(builder));
+
+        return $"Grp_{mi.Name}";
+    }
+
+    public bool CanParse(string syntax)
+    {
+        if (string.IsNullOrWhiteSpace(syntax))
+            return true; // debug.. hmm todo
+
+        var regexPattern = "^" + GetRegexPattern() + "$";
+        var regex = new Regex(regexPattern);
+        var result = regex.IsMatch(syntax);
+        return result;
+    }
+
+    object IEntityBuilder.FromAbnfSyntax(string syntax)
+    {
+        return FromAbnfSyntax(syntax);
+    }
+
+
+    public TObj FromAbnfSyntax(string syntax)
+    {
+        if (string.IsNullOrWhiteSpace(syntax) && !EntityType.IsValueType)
+            return default; // todo: hmm..
+
+
+        TObj result = (TObj)Activator.CreateInstance(typeof(TObj));
+
+        var regexPattern = "^" + GetRegexPattern() + "$";
+        var regex = new Regex(regexPattern);
+        var match = regex.Match(syntax);
+
+        if (!match.Success)
+            throw new InvalidOperationException($"For entity type {EntityType.Name}, could not match syntax {syntax} with regex pattern {regexPattern}");
+
+        foreach (var kvp in _PropertyBuilders)
         {
-            if (PropertySelector == null)
-                throw new ArgumentNullException(nameof(PropertySelector));
+            var builder = kvp.Value;
+            string capture_group_name = GetRegexGroupNameFor(kvp.Key, kvp.Value);
+            var captured_group = match.Groups[capture_group_name];
 
-            MemberInfo mi = GetMemberInfo(PropertySelector);
+            if (captured_group == null)
+                throw new InvalidOperationException($"Did not find any results for capture group {capture_group_name}");
 
-            if (mi == null)
-                throw new ArgumentException($"Could not get MemberInfo from {PropertySelector}. Make sure the expression is correct.", nameof(PropertySelector));
-
-            if (!_PropertyBuilders.ContainsKey(mi))
-            {
-                var builder = new PropertyBuilder<TObj, TProperty>(this, mi);
-                _PropertyBuilders.Add(mi, builder);
-            }
-
-            return (IPropertyBuilder<TObj, TProperty>)_PropertyBuilders[mi];
+            string captured_value = captured_group.Value;
+            builder.ModifyObj(result, captured_value);
         }
 
-        public IEntityBuilder<TObj> HasBaseType<TBaseType>()
-            where TBaseType : class
+        return result;
+    }
+
+    public string ToAbnfSyntax(TObj obj)
+    {
+        var result = new StringBuilder();
+
+        foreach (var builder in _PropertyBuilders.Values)
         {
-            if (ParentSyntax.Entity(typeof(TBaseType)) == null)
-                throw new ArgumentException($"No builder for type {typeof(TBaseType)} registered. Make sure to call .HasBaseType() on an inheriting type AFTER having set up the parent type within the builder", "TBaseType");
-
-            if (!typeof(TBaseType).IsAssignableFrom(typeof(TObj)))
-                throw new ArgumentException($"{typeof(TObj).FullName} does not inherit from {typeof(TBaseType).FullName}", "TBaseType");
-
-            var ParentBuilder = ParentSyntax.Entity<TBaseType>();
-            foreach (var kvp in ParentBuilder.GetPropertyBuilders())
-            {
-                _PropertyBuilders.Add(kvp);
-            }
-
-            return this;
+            var abnf = builder.ToAbnfSyntax(obj);
+            result.Append(abnf);
         }
 
-        public string GetRegexPattern()
+        return result.ToString();
+    }
+
+    string IEntityBuilder.ToAbnfSyntax(object obj)
+    {
+        return ToAbnfSyntax(obj as TObj);
+    }
+
+    private static MemberInfo GetMemberInfo(LambdaExpression lambda)
+    {
+        MemberExpression memberExpression;
+        if (lambda.Body is UnaryExpression)
         {
-            var result = new StringBuilder();
-
-            foreach (var kvp in _PropertyBuilders)
-            {
-                var builder = kvp.Value;
-                Trace.WriteLine($"Processing builder {builder}");
-
-                string capture_group_name = GetRegexGroupNameFor(kvp.Key, kvp.Value);
-
-                string pattern = @"(?<" + capture_group_name + ">";
-                pattern += builder.GetRegex();
-                pattern += "(?# end " + capture_group_name + ")";
-                pattern += ")";
-                result.Append(pattern);
-            }
-
-            return result.ToString();
+            var unaryExpression = (UnaryExpression)lambda.Body;
+            memberExpression = (MemberExpression)unaryExpression.Operand;
         }
+        else
+            memberExpression = (MemberExpression)lambda.Body;
 
-        private string GetRegexGroupNameFor(MemberInfo mi, IPropertyBuilder builder)
-        {
-            if (builder == null)
-                throw new ArgumentNullException(nameof(builder));
-
-            return $"Grp_{mi.Name}";
-        }
-
-        public bool CanParse(string syntax)
-        {
-            if (string.IsNullOrWhiteSpace(syntax))
-                return true; // debug.. hmm todo
-
-            var regexPattern = "^" + GetRegexPattern() + "$";
-            var regex = new Regex(regexPattern);
-            var result = regex.IsMatch(syntax);
-            return result;
-        }
-
-        object IEntityBuilder.FromAbnfSyntax(string syntax)
-        {
-            return FromAbnfSyntax(syntax);
-        }
-
-
-        public TObj FromAbnfSyntax(string syntax)
-        {
-            if (string.IsNullOrWhiteSpace(syntax) && !EntityType.IsValueType)
-                return default; // todo: hmm..
-
-
-            TObj result = (TObj)Activator.CreateInstance(typeof(TObj));
-
-            var regexPattern = "^" + GetRegexPattern() + "$";
-            var regex = new Regex(regexPattern);
-            var match = regex.Match(syntax);
-
-            if (!match.Success)
-                throw new InvalidOperationException($"For entity type {EntityType.Name}, could not match syntax {syntax} with regex pattern {regexPattern}");
-
-            foreach (var kvp in _PropertyBuilders)
-            {
-                var builder = kvp.Value;
-                string capture_group_name = GetRegexGroupNameFor(kvp.Key, kvp.Value);
-                var captured_group = match.Groups[capture_group_name];
-
-                if (captured_group == null)
-                    throw new InvalidOperationException($"Did not find any results for capture group {capture_group_name}");
-
-                string captured_value = captured_group.Value;
-                builder.ModifyObj(result, captured_value);
-            }
-
-            return result;
-        }
-
-        public string ToAbnfSyntax(TObj obj)
-        {
-            var result = new StringBuilder();
-
-            foreach (var builder in _PropertyBuilders.Values)
-            {
-                var abnf = builder.ToAbnfSyntax(obj);
-                result.Append(abnf);
-            }
-
-            return result.ToString();
-        }
-
-        string IEntityBuilder.ToAbnfSyntax(object obj)
-        {
-            return ToAbnfSyntax(obj as TObj);
-        }
-
-        private static MemberInfo GetMemberInfo(LambdaExpression lambda)
-        {
-            MemberExpression memberExpression;
-            if (lambda.Body is UnaryExpression)
-            {
-                var unaryExpression = (UnaryExpression)lambda.Body;
-                memberExpression = (MemberExpression)unaryExpression.Operand;
-            }
-            else
-                memberExpression = (MemberExpression)lambda.Body;
-
-            return memberExpression.Member;
-        }
+        return memberExpression.Member;
     }
 }

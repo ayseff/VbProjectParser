@@ -7,26 +7,25 @@ using VbProjectParserCore.Compression;
 using VbProjectParserCore.Data.Base;
 using VbProjectParserCore.Data.Base.Attributes;
 
-namespace VbProjectParserCore.Data._PROJECTREFERENCES.ReferenceRecords
+namespace VbProjectParserCore.Data._PROJECTREFERENCES.ReferenceRecords;
+
+// todo
+public class REFERENCEORIGINAL : DataBase
 {
-    // todo
-    public class REFERENCEORIGINAL : DataBase
+    [MustBe((ushort)0x000E)]
+    public readonly ushort Id;
+
+    public readonly uint SizeOfLibidOriginal;
+
+    [LengthMustEqualMember("SizeOfLibidOriginal")]
+    public byte[] LibidOriginal;
+
+    public REFERENCEORIGINAL(XlBinaryReader Data)
     {
-        [MustBe((ushort)0x000E)]
-        public readonly ushort Id;
+        Id = Data.ReadUInt16();
+        SizeOfLibidOriginal = Data.ReadUInt32();
+        LibidOriginal = Data.ReadBytes(SizeOfLibidOriginal);
 
-        public readonly uint SizeOfLibidOriginal;
-
-        [LengthMustEqualMember("SizeOfLibidOriginal")]
-        public byte[] LibidOriginal;
-
-        public REFERENCEORIGINAL(XlBinaryReader Data)
-        {
-            Id = Data.ReadUInt16();
-            SizeOfLibidOriginal = Data.ReadUInt32();
-            LibidOriginal = Data.ReadBytes(SizeOfLibidOriginal);
-
-            Validate();
-        }
+        Validate();
     }
 }
